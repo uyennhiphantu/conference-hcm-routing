@@ -208,22 +208,6 @@ python analysis.py
 python draw_compare_routes.py --top-k 10 --metric delta_time_s
 open route_compare_layers.html
 ```
-
----
-
-## Project Structure
-
-```
-├── config.py                 # Bounding box, endpoints, settings
-├── generate_points.py        # Generate sample points
-├── run_matrix_and_delta.py   # Calculate OD matrices
-├── draw_compare_routes.py    # Bidirectional visualization
-├── analysis.py               # Statistics output
-├── run_2018.sh / run_2025.sh # Docker scripts
-├── points.csv                # Sample points
-└── matrix_delta.csv          # Delta comparison
-```
-
 ---
 
 ## Data Schema
@@ -262,9 +246,6 @@ delta_time_s, delta_distance_km, pct_time, pct_distance
 ### For Citizens
 > "Getting across District 2 is now faster and more predictable than in 2018—that's time returned to your day."
 
----
-
-## Future Analysis
 
 - [ ] Expand to all HCMC districts
 - [ ] Add temporal analysis (rush hour vs. off-peak)
