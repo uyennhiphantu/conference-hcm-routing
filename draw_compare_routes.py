@@ -14,9 +14,26 @@ DELTA_CSV = MATRIX_DELTA_CSV
 OUT_HTML = "route_compare_layers.html"
 TIMEOUT_SEC = ROUTE_TIMEOUT
 
-# Color scheme for bidirectional comparison
-COLOR_FORWARD = "#2563eb"  # Blue for Forward (A→B)
-COLOR_RETURN = "#dc2626"   # Red for Return (B→A)
+# Color pairs for each OD pair: (forward_color, return_color)
+# Each OD pair gets a unique visually distinct pair
+COLOR_PAIRS = [
+    ("#2563eb", "#dc2626"),  # Blue / Red
+    ("#16a34a", "#f97316"),  # Green / Orange
+    ("#db2777", "#8b5cf6"),  # Pink / Purple
+    ("#0891b2", "#eab308"),  # Cyan / Yellow
+    ("#7c3aed", "#10b981"),  # Violet / Emerald
+    ("#e11d48", "#0ea5e9"),  # Rose / Sky
+    ("#ca8a04", "#6366f1"),  # Amber / Indigo
+    ("#059669", "#f43f5e"),  # Teal / Red-Pink
+    ("#4f46e5", "#84cc16"),  # Indigo / Lime
+    ("#be123c", "#14b8a6"),  # Red / Teal
+    ("#9333ea", "#22c55e"),  # Purple / Green
+    ("#0284c7", "#ea580c"),  # Blue / Orange
+]
+
+def get_color_pair(index):
+    """Get a unique (forward, return) color pair for an OD pair."""
+    return COLOR_PAIRS[index % len(COLOR_PAIRS)]
 
 def decode_polyline(s, precision=6):
     index, lat, lon = 0, 0, 0
@@ -91,10 +108,16 @@ def main(top_k=10, metric="delta_distance_km"):
     
     center = (float(points["lat"].mean()), float(points["lon"].mean()))
     m = folium.Map(location=center, zoom_start=14, control_scale=True)  # zoom=14 for Districts 1,2,3
-    
+
+    # Track OD pairs and their colors for dynamic legend
+    legend_entries = []
+
     for i, row in cand.reset_index(drop=True).iterrows():
         src = int(row["src"])
         dst = int(row["dst"])
+
+        # Get unique color pair for this OD pair
+        color_fwd, color_ret = get_color_pair(i)
 
         try:
             A = get_point(points, src)
@@ -115,8 +138,11 @@ def main(top_k=10, metric="delta_distance_km"):
             print(f"[{i+1}/{top_k}] ✗ Failed {src}→{dst}")
             continue
 
+        # Track for legend
+        legend_entries.append((src, dst, color_fwd, color_ret))
+
         popup_fwd = f"""
-        <b style="color:{COLOR_FORWARD}">▶ FORWARD: {src} → {dst}</b><br>
+        <b style="color:{color_fwd}">▶ FORWARD: {src} → {dst}</b><br>
         <b>2018:</b> {row['time_s_2018']:.0f}s, {row['distance_km_2018']:.3f}km<br>
         <b>2025:</b> {row['time_s_2025']:.0f}s, {row['distance_km_2025']:.3f}km<br>
         <b>Δ:</b> {row['delta_time_s']:+.0f}s, {row['delta_distance_km']:+.3f}km<br><br>
@@ -125,13 +151,13 @@ def main(top_k=10, metric="delta_distance_km"):
         2025: {sum25_fwd.get('length'):.2f}km, {sum25_fwd.get('time'):.0f}s
         """
 
-        # Forward 2018 - Blue Solid
-        folium.PolyLine(coords18_fwd, weight=5, opacity=0.9, color=COLOR_FORWARD,
+        # Forward 2018 - Solid
+        folium.PolyLine(coords18_fwd, weight=5, opacity=0.9, color=color_fwd,
                        tooltip=f"▶ FWD 2018: {src}→{dst}",
                        popup=folium.Popup(popup_fwd, max_width=400)).add_to(fg)
 
-        # Forward 2025 - Blue Dashed
-        folium.PolyLine(coords25_fwd, weight=5, opacity=0.9, color=COLOR_FORWARD,
+        # Forward 2025 - Dashed
+        folium.PolyLine(coords25_fwd, weight=5, opacity=0.9, color=color_fwd,
                        dash_array="12,8", tooltip=f"▶ FWD 2025: {src}→{dst}",
                        popup=folium.Popup(popup_fwd, max_width=400)).add_to(fg)
 
@@ -161,7 +187,7 @@ def main(top_k=10, metric="delta_distance_km"):
                 asym_note = f"<br><b style='color:#dc2626'>⚠️ ASYMMETRY vs Forward: Δt={time_asym:+.0f}s, Δd={dist_asym:+.2f}km</b>"
 
             popup_ret = f"""
-            <b style="color:{COLOR_RETURN}">◀ RETURN: {dst} → {src}</b><br>
+            <b style="color:{color_ret}">◀ RETURN: {dst} → {src}</b><br>
             <b>2018:</b> {ret_row['time_s_2018']:.0f}s, {ret_row['distance_km_2018']:.3f}km<br>
             <b>2025:</b> {ret_row['time_s_2025']:.0f}s, {ret_row['distance_km_2025']:.3f}km<br>
             <b>Δ:</b> {ret_row['delta_time_s']:+.0f}s, {ret_row['delta_distance_km']:+.3f}km<br>
@@ -171,13 +197,13 @@ def main(top_k=10, metric="delta_distance_km"):
             2025: {sum25_ret.get('length'):.2f}km, {sum25_ret.get('time'):.0f}s
             """
 
-            # Return 2018 - Red Solid
-            folium.PolyLine(coords18_ret, weight=5, opacity=0.9, color=COLOR_RETURN,
+            # Return 2018 - Solid
+            folium.PolyLine(coords18_ret, weight=5, opacity=0.9, color=color_ret,
                            tooltip=f"◀ RET 2018: {dst}→{src}",
                            popup=folium.Popup(popup_ret, max_width=400)).add_to(fg)
 
-            # Return 2025 - Red Dashed
-            folium.PolyLine(coords25_ret, weight=5, opacity=0.9, color=COLOR_RETURN,
+            # Return 2025 - Dashed
+            folium.PolyLine(coords25_ret, weight=5, opacity=0.9, color=color_ret,
                            dash_array="12,8", tooltip=f"◀ RET 2025: {dst}→{src}",
                            popup=folium.Popup(popup_ret, max_width=400)).add_to(fg)
 
@@ -193,21 +219,31 @@ def main(top_k=10, metric="delta_distance_km"):
                           color="#666", fill=True).add_to(all_pts)
     all_pts.add_to(m)
     
-    # Add legend - Color-coded bidirectional
+    # Build dynamic legend showing each OD pair with its unique colors
+    legend_rows = ""
+    for src, dst, c_fwd, c_ret in legend_entries:
+        legend_rows += f"""
+        <div style="margin:4px 0; display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:bold; min-width:60px;">OD {src}↔{dst}</span>
+            <span style="display:inline-block; width:24px; height:4px; background:{c_fwd};"></span>
+            <span style="font-size:11px;">Fwd</span>
+            <span style="display:inline-block; width:24px; height:4px; background:{c_ret};"></span>
+            <span style="font-size:11px;">Ret</span>
+        </div>"""
+
     legend_html = f"""
     <div style="position: fixed; bottom: 50px; left: 50px; z-index: 9999;
                 background: white; padding: 12px 16px; border: 2px solid #333;
-                border-radius: 8px; font-size: 13px; font-family: sans-serif;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-        <b style="font-size:14px">Route Legend</b><br><br>
-        <span style="color:{COLOR_FORWARD}">━━━</span> <b>Blue Solid</b>: Forward (A→B) 2018<br>
-        <span style="color:{COLOR_FORWARD}">╌╌╌</span> <b>Blue Dashed</b>: Forward (A→B) 2025<br>
-        <span style="color:{COLOR_RETURN}">━━━</span> <b>Red Solid</b>: Return (B→A) 2018<br>
-        <span style="color:{COLOR_RETURN}">╌╌╌</span> <b>Red Dashed</b>: Return (B→A) 2025<br>
-        <hr style="margin:8px 0">
-        <span style="color:green">▶</span> Source &nbsp;
-        <span style="color:orange">■</span> Destination<br>
-        <span style="color:#dc2626">⚠️</span> = One-way street asymmetry
+                border-radius: 8px; font-size: 12px; font-family: sans-serif;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2); max-height: 420px; overflow-y: auto;">
+        <b style="font-size:14px;">Route Colors</b><br>
+        <span style="color:#666; font-size:11px;">Solid = 2018 | Dashed = 2025</span>
+        <hr style="margin:8px 0;">
+        {legend_rows}
+        <hr style="margin:8px 0;">
+        <span style="color:green;">▶</span> Source &nbsp;
+        <span style="color:orange;">■</span> Destination<br>
+        <span style="color:#dc2626;">⚠️</span> = One-way asymmetry
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))
@@ -215,7 +251,7 @@ def main(top_k=10, metric="delta_distance_km"):
     folium.LayerControl(collapsed=False).add_to(m)
     m.save(OUT_HTML)
     print(f"\n✅ Saved: {OUT_HTML}")
-    print("   Legend: Thick=Forward, Thin=Return | Solid=2018, Dashed=2025")
+    print(f"   {len(legend_entries)} OD pairs with unique colors | Solid=2018, Dashed=2025")
 
 if __name__ == "__main__":
     import argparse
