@@ -150,16 +150,32 @@ For 1 million affected commuters = ₫6.6 trillion/year economic value
 
 ## Visualization
 
-The map uses color-coded bidirectional routes:
+Each OD pair is assigned a **unique color pair** for visual distinction:
 
-| Color | Line Style | Meaning |
-|-------|------------|---------|
-| 🔵 Blue | Solid | Forward (A→B) 2018 |
-| 🔵 Blue | Dashed | Forward (A→B) 2025 |
-| 🔴 Red | Solid | Return (B→A) 2018 |
-| 🔴 Red | Dashed | Return (B→A) 2025 |
+| OD Pair | Forward Color | Return Color |
+|---------|---------------|--------------|
+| 1st | Blue | Red |
+| 2nd | Green | Orange |
+| 3rd | Pink | Purple |
+| 4th | Cyan | Yellow |
+| 5th | Violet | Emerald |
+| ... | ... | ... |
 
-**Interpretation:** When blue and red routes diverge significantly, it indicates one-way street effects forcing detours on return trips.
+### Line Styles
+
+| Style | Meaning |
+|-------|---------|
+| **Solid** | 2018 route |
+| **Dashed** | 2025 route |
+
+### Map Markers
+
+| Marker | Meaning |
+|--------|---------|
+| 🟢 Green | Source (Origin) |
+| 🟠 Orange | Destination |
+
+**Interpretation:** When Forward and Return routes diverge significantly, it indicates one-way street effects forcing detours. The dynamic legend on the map shows each OD pair with its assigned colors.
 
 ---
 
