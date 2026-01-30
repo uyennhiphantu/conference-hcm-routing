@@ -1,4 +1,4 @@
-# HCM Road Network Analysis - Districts 1, 2, 3
+# HCM Road Network Analysis
 
 Routing comparison between 2018 and 2025 OSM data using Valhalla engine, focused on central Ho Chi Minh City.
 
